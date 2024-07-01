@@ -7,17 +7,18 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ApiPeliculas.Controllers {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsuarioController (IMapper mapper, IUsuarioRepositorio usuRepo , RespuestasApi respuestaApi): ControllerBase {
+    public class UsuariosController (IMapper mapper, IUsuarioRepositorio usuRepo ): ControllerBase {
 
         private readonly IMapper _mapper = mapper;
         private readonly IUsuarioRepositorio _usuRepo = usuRepo;
-        protected  RespuestasApi _respuestaApi = respuestaApi;
+        protected  RespuestasApi _respuestaApi = new();
 
-
+        [Authorize(Roles = "adm")]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -32,7 +33,7 @@ namespace ApiPeliculas.Controllers {
             return Ok(usuariosDto);
         }
 
-
+        [Authorize(Roles = "adm")]
         [HttpGet("{usuarioId}", Name = "GetUsuario")]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -49,7 +50,7 @@ namespace ApiPeliculas.Controllers {
         }
 
 
-
+        [AllowAnonymous]
         [HttpPost("registro")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,14 +59,14 @@ namespace ApiPeliculas.Controllers {
         public async Task<IActionResult> Registro([FromBody] UsuarioRegistroDto usuarioRegistroDto) {
 
             bool isUniqueUser = _usuRepo.IsUniqueUser(usuarioRegistroDto.NombreUsuario);
-            if (!isUniqueUser) {
+            if (isUniqueUser) {
                 _respuestaApi.StatusCode = HttpStatusCode.BadRequest;
                 _respuestaApi.IsSuccess = false;
                 _respuestaApi.ErrorMessages.Add("El nombre del usuario ya existe");
                 return BadRequest(_respuestaApi);
             }
 
-            var usuario = _usuRepo.Registro(usuarioRegistroDto);
+            var usuario = await _usuRepo.Registro(usuarioRegistroDto);
 
             if (usuario == null) {
                 _respuestaApi.StatusCode = HttpStatusCode.BadRequest;
@@ -73,18 +74,39 @@ namespace ApiPeliculas.Controllers {
                 _respuestaApi.ErrorMessages.Add("Error en el registro");
                 return BadRequest(_respuestaApi);
             }
-            
-            return Ok(usuario);
+
+            _respuestaApi.StatusCode = HttpStatusCode.OK;
+            _respuestaApi.IsSuccess = true;
+            _respuestaApi.Result = usuario;
+            return Ok(_respuestaApi);
+           
         }
 
-        public IActionResult IsUniqueUser(string usuario) {
-            var isUniqueUser = _usuRepo.IsUniqueUser(usuario);
-            return Ok(isUniqueUser);
 
+
+        [AllowAnonymous]
+        [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Login(UsuarioLoginDto usuarioLoginRespuestaDto) {
+
+            var respuestaLogin = await _usuRepo.Login(usuarioLoginRespuestaDto);
+
+            if (respuestaLogin.Usuario == null || string.IsNullOrEmpty(respuestaLogin.Token)) {
+                _respuestaApi.StatusCode = HttpStatusCode.BadRequest;
+                _respuestaApi.IsSuccess = false;
+                _respuestaApi.ErrorMessages.Add("El nombre de usuario o password son incorrectos");
+                return BadRequest(_respuestaApi);
+            }
+
+            _respuestaApi.StatusCode = HttpStatusCode.OK;
+            _respuestaApi.IsSuccess = true;
+            _respuestaApi.Result = respuestaLogin;
+
+
+            return Ok(_respuestaApi);
         }
-        //public IActionResult Login(UsuarioLoginDto usuarioLoginRespuestaDto) {
-
-        //}
 
     }
 }
