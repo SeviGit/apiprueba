@@ -1,22 +1,21 @@
-﻿using ApiPeliculas.Data;
+﻿using ApiPeliculas.Modelos;
 using ApiPeliculas.Modelos.Dtos;
-using ApiPeliculas.Modelos;
 using ApiPeliculas.Repositorio.IRepositorio;
+using Asp.Versioning;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using System.Net;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace ApiPeliculas.Controllers {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsuariosController (IMapper mapper, IUsuarioRepositorio usuRepo ): ControllerBase {
+    [ApiVersionNeutral] // Indiferente para versiones, aparece en todas
+    public class UsuariosController(IMapper mapper, IUsuarioRepositorio usuRepo) : ControllerBase {
 
         private readonly IMapper _mapper = mapper;
         private readonly IUsuarioRepositorio _usuRepo = usuRepo;
-        protected  RespuestasApi _respuestaApi = new();
+        protected RespuestasApi _respuestaApi = new();
 
         [Authorize(Roles = "adm")]
         [HttpGet]
@@ -26,8 +25,8 @@ namespace ApiPeliculas.Controllers {
             var usuarios = _usuRepo.GetUsuarios();
             var usuariosDto = new List<UsuarioDto>();
 
-            foreach ( var usuario in usuarios) {
-                usuariosDto.Add(_mapper.Map<UsuarioDto>(usuario));  
+            foreach (var usuario in usuarios) {
+                usuariosDto.Add(_mapper.Map<UsuarioDto>(usuario));
             }
 
             return Ok(usuariosDto);
@@ -79,7 +78,7 @@ namespace ApiPeliculas.Controllers {
             _respuestaApi.IsSuccess = true;
             _respuestaApi.Result = usuario;
             return Ok(_respuestaApi);
-           
+
         }
 
 

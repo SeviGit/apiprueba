@@ -36,12 +36,12 @@ var apiVersioningBuilder = builder.Services.AddApiVersioning(opciones => {
     opciones.AssumeDefaultVersionWhenUnspecified = true;
     opciones.DefaultApiVersion = new ApiVersion(1, 0);
     opciones.ReportApiVersions = true;
-    opciones.ApiVersionReader = ApiVersionReader.Combine(
-        new QueryStringApiVersionReader("api-version")
-        // ...?api-version=1.0
-        // new HeaderApiVersionReader("X-Version");
-        // new MediaTypeApiVersionReader("ver");
-        ); 
+    //opciones.ApiVersionReader = ApiVersionReader.Combine(
+    //    new QueryStringApiVersionReader("api-version")
+    //    // ...?api-version=1.0
+    //    // new HeaderApiVersionReader("X-Version");
+    //    // new MediaTypeApiVersionReader("ver");
+    //    ); 
 });
 
 apiVersioningBuilder.AddApiExplorer(
@@ -87,7 +87,7 @@ builder.Services.AddControllers(opciones => {
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => { // (Video 59 min 14)
+builder.Services.AddSwaggerGen(options => { // Añadir JWT a Swagger(Video 59 min 14)
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
         Description = 
         "Autenticación JWT usando el esquema Bearer. \r\n\r\n" +
@@ -111,6 +111,34 @@ builder.Services.AddSwaggerGen(options => { // (Video 59 min 14)
             new List<string>()
         }
     });
+    options.SwaggerDoc("v1", new OpenApiInfo {
+        Version = "v1.0",
+        Title = "Peliculas Api V1",
+        Description = "Api de Peliculas Versión 1",
+        TermsOfService = new Uri("https://render2web.com/promociones"),
+        Contact = new OpenApiContact {
+            Name = "render2web",
+            Url = new Uri("https://render2web.com/promociones")
+        },
+        License = new OpenApiLicense {
+            Name = "Licencia Personal",
+            Url = new Uri("https://render2web.com/promociones")
+        }
+    });
+    options.SwaggerDoc("v2", new OpenApiInfo {
+        Version = "v2.0",
+        Title = "Peliculas Api V2",
+        Description = "Api de Peliculas Versión 2",
+        TermsOfService = new Uri("https://render2web.com/promociones"),
+        Contact = new OpenApiContact {
+            Name = "render2web",
+            Url = new Uri("https://render2web.com/promociones")
+        },
+        License = new OpenApiLicense {
+            Name = "Licencia Personal",
+            Url = new Uri("https://render2web.com/promociones")
+        }
+    });
 });
 
 
@@ -129,7 +157,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    //Soporte para versionado multiple en Swagger(video 68)
+    app.UseSwaggerUI(opciones => {
+        opciones.SwaggerEndpoint("/swagger/v1/swagger.json", "ApiPeliculasV1");
+        opciones.SwaggerEndpoint("/swagger/v2/swagger.json", "ApiPeliculasV2");
+    });
 }
 
 app.UseHttpsRedirection();
